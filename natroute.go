@@ -10,9 +10,12 @@ import (
 )
 
 func main() {
-	upnpPort := 44300
 
-	// connect to router
+	upnpPort := 44320
+
+	println("正在初始化UPNP端口...")
+
+	// 连接到路由器
 	d, err := upnp.Discover()
 	if err != nil {
 		log.Fatal(err)
@@ -25,63 +28,65 @@ func main() {
 	}
 	fmt.Println("您的IP是:", ip)
 
-	// forward a port
+	// 转发端口
 	err = d.Forward(uint16(upnpPort), "upnp Ip")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	println("访问端口检查...")
 	// 使用外部服务器的IP
-	initHttp()
 	ip, port, err := httpUpdate("POST", "https://me.wqyblog.cn/", bytes.NewBufferString(""), upnpPort)
 	if err != nil {
 		fmt.Println(err)
-		err = Exit(d, upnpPort)
+		err = Quit(d, upnpPort)
 		if err != nil {
 			return
 		}
 	}
-	//fmt.Println("您的IP是:", ip)
-	//fmt.Println("您的PORT是:", port)
-	fmt.Println("访问地址:", "http://"+ip+":"+port)
 
+	time.Sleep(time.Second * 5)
+
+	println("正在初始化http...")
 	go func() {
-		err = initNatProxy(upnpPort, ip, port)
+		err := initNatProxy(upnpPort)
 		if err != nil {
 			fmt.Println(err)
-			err = Exit(d, upnpPort)
 			if err != nil {
 				return
 			}
 		}
 	}()
+
 	time.Sleep(time.Second * 5)
+
+	fmt.Println("正在初始化端口保护...")
 	go func() {
 		err = httpWebSocket(ip, port)
 		if err != nil {
 			fmt.Println(err)
-			err = Exit(d, upnpPort)
+			err = Quit(d, upnpPort)
 			if err != nil {
 				return
 			}
 		}
 	}()
-	go Quit(d, upnpPort)
-	select {}
-}
 
-func Quit(d *upnp.IGD, upnpPort int) {
 	time.Sleep(time.Second * 10)
+	fmt.Println("访问地址:", "http://"+ip+":"+port)
 	// 输入任何按钮退出
 	fmt.Println("输入任何按钮退出^_^...")
 	b := make([]byte, 1)
-	_, err := os.Stdin.Read(b)
+	_, err = os.Stdin.Read(b)
 	if err != nil {
 		select {}
 	}
-	Exit(d, upnpPort)
+	err = Quit(d, upnpPort)
+	if err != nil {
+		return
+	}
 }
-func Exit(d *upnp.IGD, upnpPort int) (err error) {
+func Quit(d *upnp.IGD, upnpPort int) (err error) {
 	println("关闭UPNP端口")
 	// un-forward a port
 	err = d.Clear(uint16(upnpPort))

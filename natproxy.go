@@ -19,7 +19,7 @@ func websocketHandler(ws *websocket.Conn) {
 		}
 	}
 }
-func initNatProxy(upnpPort int, ip, port string) (err error) {
+func initNatProxy(upnpPort int) (err error) {
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		_, err := io.WriteString(w, "Hello, world!\n")
 		if err != nil {
@@ -29,7 +29,6 @@ func initNatProxy(upnpPort int, ip, port string) (err error) {
 
 	http.Handle("/ping", websocket.Handler(websocketHandler))
 	http.HandleFunc("/", helloHandler)
-	println("http 启动成功")
 	err = http.ListenAndServe(":"+strconv.Itoa(upnpPort), nil)
 	if err != nil {
 		return

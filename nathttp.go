@@ -26,10 +26,9 @@ const (
 )
 
 var nativeIP = "192.168.1.15"
+var nativeCIDR = "192.168.1.0/24"
 
 func initHttp() {
-	nativeCIDR := "192.168.1.0/24"
-
 	_, ipNet, err := net.ParseCIDR(nativeCIDR)
 	if err != nil {
 		err = fmt.Errorf("%s %w", errOther, err)
@@ -80,6 +79,7 @@ func initHttp() {
 }
 
 func httpUpdate(method string, url string, body *bytes.Buffer, sendPort int) (ip string, port string, err error) {
+	initHttp()
 	// 使用context控制请求超时
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -121,13 +121,13 @@ func httpUpdate(method string, url string, body *bytes.Buffer, sendPort int) (ip
 	}
 	defer func() {
 		client.CloseIdleConnections()
-		if cerr := resp.Body.Close(); cerr != nil {
+		if err = resp.Body.Close(); err != nil {
 			// 如果关闭时出错，且之前没有错误，则将关闭错误返回
 			if err == nil {
-				err = fmt.Errorf("%s %w", errCloseResponseBody, cerr)
+				err = fmt.Errorf("%s %w", errCloseResponseBody, err)
 			} else {
 				// 优化：如果已有错误，添加关闭响应体时的错误信息作为上下文
-				err = fmt.Errorf("%s, %s %w", err, errCloseResponseBody, cerr)
+				err = fmt.Errorf("%s, %s %w", err, errCloseResponseBody, err)
 			}
 		}
 		fmt.Println("关闭http连接")
@@ -156,11 +156,11 @@ func httpUpdate(method string, url string, body *bytes.Buffer, sendPort int) (ip
 	if err != nil {
 		return
 	}
+	client.CloseIdleConnections()
 	return
 }
 
 func httpWebSocket(ip string, post string) (err error) {
-	fmt.Println("端口保护启动")
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
@@ -194,7 +194,7 @@ func httpWebSocket(ip string, post string) (err error) {
 		}
 	}()
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
 
 	for {
