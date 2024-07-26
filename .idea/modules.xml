@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/NATRoute.iml" filepath="$PROJECT_DIR$/NATRoute.iml" />
+      <module fileurl="file://$PROJECT_DIR$/NATUpnpRoute.iml" filepath="$PROJECT_DIR$/NATUpnpRoute.iml" />
     </modules>
   </component>
 </project>
